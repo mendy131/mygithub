@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>课堂互动问答 - 气泡版</title>
+    <style>
+        :root {
+            --primary-color: #2196F3;
+            --bg-color: #f5f5f5;
+            --bubble-user: #e3f2fd;
+            --bubble-others: #ffffff;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: var(--bg-color);
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        /* 气泡消息样式 */
+        .message-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .message-bubble {
+            background: var(--bubble-others);
+            border-radius: 18px;
+            padding: 15px 20px;
+            margin: 10px 0;
+            max-width: 80%;
+            position: relative;
+            animation: fadeIn 0.3s ease-in;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+        .message-bubble::after {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 15px;
+            width: 0;
+            height: 0;
+            border: 10px solid transparent;
+            border-right-color: var(--bubble-others);
+        }
+        /* 输入区域美化 */
+        .input-area {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin: 20px 0;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            resize: vertical;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        textarea:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(33,150,243,0.3);
+        }
+        /* 点赞样式优化 */
+        .like-btn {
+            background: rgba(33,150,243,0.1);
+            color: var(--primary-color);
+            padding: 6px 12px;
+            border-radius: 15px;
+            border: none;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: 0.2s;
+        }
+        .like-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+        /* 词云区域美化 */
+        #wordCloud {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .word-item {
+            display: inline-block;
+            margin: 5px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            background: #e3f2fd;
+            transition: 0.2s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 移动端适配 */
+        @media (max-width: 600px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: var(--primary-color); text-align: center;">📚 课堂实时问答</h1>
+    
+    <div class="input-area">
+        <textarea id="answerInput" placeholder="请输入你的见解...（支持多行输入）"></textarea>
+        <button onclick="submitAnswer()">🚀 发布回答</button>
+    </div>
+
+    <div class="container">
+        <div class="message-container">
+            <h3>🗨️ 最新讨论</h3>
+            <div id="answersList"></div>
+        </div>
+        <div id="wordCloud">
+            <h3>📊 热点词汇</h3>
+        </div>
+    </div>
+
+    <script>
+        let answers = [];
+
+        const stopWords = new Set(['的', '了', '是', '在', '会', '都', '如果', '怎样', '呢']);
+
+        function submitAnswer() {
+            const answer = document.getElementById('answerInput').value.trim();
+            if (answer) {
+                answers.unshift({  // 最新回答置顶
+                    text: answer,
+                    likes: 0,
+                    timestamp: new Date().getTime()
+                });
+                document.getElementById('answerInput').value = '';
+                updateDisplay();
+            }
+        }
+
+        function likeAnswer(index) {
+            answers[index].likes++;
+            updateDisplay();
+        }
+
+        function analyzeKeywords() {
+            const wordCount = {};
+            answers.forEach(answer => {
+                const words = answer.text.split(/[，、。；！？\s]/g).filter(w => w);
+                words.forEach(word => {
+                    if (!stopWords.has(word) && word.length > 1) {
+                        wordCount[word] = (wordCount[word] || 0) + 1;
+                    }
+                });
+            });
+            return Object.entries(wordCount)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8)
+                .map(item => item[0]);
+        }
+
+        function updateDisplay() {
+            const answersList = document.getElementById('answersList');
+            const wordCloud = document.getElementById('wordCloud');
+
+            // 更新回答列表
+            answersList.innerHTML = '';
+            answers.forEach((answer, index) => {
+                const bubble = document.createElement('div');
+                bubble.className = 'message-bubble';
+                bubble.innerHTML = `
+                    <p>${answer.text}</p>
+                    <div style="margin-top: 10px; display: flex; align-items: center;">
+                        <button class="like-btn" onclick="likeAnswer(${index})">
+                            👍 点赞 (${answer.likes})
+                        </button>
+                        <span style="color: #666; margin-left: auto; font-size: 0.9em;">
+                            ${new Date(answer.timestamp).toLocaleTimeString()}
+                        </span>
+                    </div>
+                `;
+                answersList.appendChild(bubble);
+            });
+
+            // 更新词云
+            wordCloud.innerHTML = '<h3>📊 热点词汇</h3>';
+            analyzeKeywords().forEach(word => {
+                const span = document.createElement('span');
+                span.className = 'word-item';
+                span.textContent = word;
+                wordCloud.appendChild(span);
+            });
+        }
+    </script>
+</body>
+</html>
